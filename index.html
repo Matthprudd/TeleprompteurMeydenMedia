@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>MEYDEN Téléprompteur Live</title>
+
+  <style>
+    :root {
+      --orange: #ff6a00;
+      --orange-light: #ff9b45;
+      --black: #080808;
+      --panel: #141412;
+      --panel-light: #1d1d1a;
+      --border: #34342f;
+      --white: #f7f6f1;
+      --gray: #a5a49c;
+      --font-size: 54px;
+      --reader-width: 1050px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--black);
+      color: var(--white);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      min-height: 68px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      background: #0d0d0c;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--orange);
+      color: #111;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .brand strong {
+      display: block;
+      letter-spacing: 1px;
+    }
+
+    .brand small {
+      color: var(--gray);
+    }
+
+    .top-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .button {
+      min-height: 40px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-light);
+      color: var(--white);
+      font-weight: 700;
+    }
+
+    .button:hover {
+      border-color: var(--orange);
+    }
+
+    .button.primary {
+      border-color: var(--orange);
+      background: var(--orange);
+      color: #111;
+    }
+
+    .button.icon {
+      width: 42px;
+      padding: 0;
+    }
+
+    .workspace {
+      min-height: 0;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 370px minmax(0, 1fr);
+    }
+
+    .editor {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #0e0e0d;
+      border-right: 1px solid var(--border);
+    }
+
+    .editor-heading {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .editor-heading span {
+      color: var(--orange-light);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .editor-heading h1 {
+      margin: 6px 0;
+      font-size: 20px;
+    }
+
+    .editor-heading p {
+      margin: 0;
+      color: var(--gray);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .input-zone {
+      height: 43%;
+      min-height: 230px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    textarea {
+      min-height: 0;
+      flex: 1;
+      width: 100%;
+      padding: 14px;
+      resize: none;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: #080808;
+      color: var(--white);
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      border-color: var(--orange);
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-actions .primary {
+      flex: 1;
+    }
+
+    .segment-heading {
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    #segmentCount {
+      color: var(--orange-light);
+    }
+
+    #segmentList {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 9px;
+    }
+
+    .segment {
+      width: 100%;
+      margin-bottom: 5px;
+      padding: 11px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--white);
+      text-align: left;
+    }
+
+    .segment:hover {
+      background: var(--panel-light);
+    }
+
+    .segment.active {
+      border-color: var(--orange);
+      background: rgba(255, 106, 0, 0.12);
+    }
+
+    .segment-number {
+      flex: 0 0 auto;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--panel-light);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .segment.active .segment-number {
+      background: var(--orange);
+      color: #111;
+    }
+
+    .segment-info {
+      min-width: 0;
+    }
+
+    .segment-title {
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .segment-meta {
+      margin-top: 3px;
+      color: var(--gray);
+      font-size: 11px;
+    }
+
+    .prompter {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .controls {
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: auto minmax(200px, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      background: #11110f;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .transport {
+      display: flex;
+      gap: 7px;
+    }
+
+    #playButton {
+      min-width: 120px;
+    }
+
+    .speed-control {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      color: var(--gray);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--orange);
+    }
+
+    #speedValue {
+      min-width: 80px;
+      color: var(--orange-light);
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .reader-shell {
+      min-height: 0;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #reader {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      scrollbar-color: #444 transparent;
+    }
+
+    #readerContent {
+      width: min(calc(100% - 60px), var(--reader-width));
+      margin: auto;
+      padding: 25vh 0 50vh;
+      font-size: var(--font-size);
+      font-weight: 700;
+      line-height: 1.48;
+      letter-spacing: -1px;
+      transform-origin: center;
+    }
+
+    #readerContent.mirror {
+      transform: scaleX(-1);
+    }
+
+    .reader-label {
+      margin-bottom: 18px;
+      color: var(--orange-light);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .reader-title {
+      margin: 0 0 30px;
+      color: var(--orange);
+      font-size: 0.58em;
+      line-height: 1.15;
+      text-transform: uppercase;
+    }
+
+    .reader-text {
+      margin: 0 0 1em;
+    }
+
+    .cue {
+      margin: 35px 0;
+      padding-left: 15px;
+      border-left: 4px solid var(--orange);
+      color: var(--orange-light);
+      font-size: 0.48em;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .empty {
+      padding-top: 20vh;
+      color: var(--gray);
+      font-size: 20px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .guide {
+      pointer-events: none;
+      position: absolute;
+      top: 43%;
+      right: 20px;
+      left: 20px;
+      z-index: 3;
+      border-top: 1px solid rgba(255, 106, 0, 0.45);
+    }
+
+    .guide::before,
+    .guide::after {
+      content: "";
+      position: absolute;
+      top: -5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .guide::before {
+      left: 0;
+    }
+
+    .guide::after {
+      right: 0;
+    }
+
+    .fade {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: linear-gradient(
+        #080808 0%,
+        transparent 18%,
+        transparent 80%,
+        #080808 100%
+      );
+    }
+
+    .bottom {
+      min-height: 68px;
+      padding: 10px 14px;
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr);
+      align-items: center;
+      gap: 15px;
+      background: #11110f;
+      border-top: 1px solid var(--border);
+    }
+
+    #currentTitle {
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 800;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #currentMeta {
+      margin-top: 3px;
+      color: var(--gray);
+      font-size: 11px;
+    }
+
+    .progress-zone {
+      min-width: 250px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .progress-track {
+      width: 220px;
+      height: 5px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: var(--panel-light);
+    }
+
+    #progress {
+      width: 0;
+      height: 100%;
+      background: var(--orange);
+    }
+
+    .time {
+      width: 42px;
+      color: var(--gray);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    body.live-mode header,
+    body.live-mode .editor {
+      display: none;
+    }
+
+    body.live-mode .workspace {
+      display: block;
+    }
+
+    body.live-mode .prompter {
+      height: 100vh;
+    }
+
+    body.live-mode .controls,
+    body.live-mode .bottom {
+      opacity: 0.15;
+      transition: opacity 0.2s;
+    }
+
+    body.live-mode .controls:hover,
+    body.live-mode .bottom:hover {
+      opacity: 1;
+    }
+
+    @media (max-width: 800px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .workspace {
+        display: block;
+      }
+
+      .editor {
+        height: 55vh;
+        min-height: 430px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .prompter {
+        height: 100vh;
+        min-height: 600px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .transport {
+        justify-content: center;
+      }
+
+      #readerContent {
+        width: calc(100% - 30px);
+        font-size: 38px;
+      }
+
+      .bottom {
+        grid-template-columns: 1fr auto;
+      }
+
+      .progress-zone {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-width: 0;
+      }
+
+      .progress-track {
+        flex: 1;
+      }
+
+      .brand small,
+      #exampleButton {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <header>
+      <div class="brand">
+        <div class="logo">M</div>
+
+        <div>
+          <strong>MEYDEN TÉLÉPROMPTEUR</strong>
+          <small>Conducteur d’émission et lecture en direct</small>
+        </div>
+      </div>
+
+      <div class="top-buttons">
+        <button class="button" id="exampleButton">Exemple</button>
+        <button class="button primary" id="liveButton">Écran live</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <aside class="editor">
+        <div class="editor-heading">
+          <span>Préparation</span>
+          <h1>Texte de l’émission</h1>
+
+          <p>
+            Utilisez des titres, « SECTION », « SEGMENT », « THÈME »
+            ou une ligne en majuscules.
+          </p>
+        </div>
+
+        <div class="input-zone">
+          <textarea
+            id="scriptInput"
+            placeholder="# TITRE DE L’ÉMISSION
+
+## OUVERTURE
+Votre texte...
+
+THÈME : Actualité musicale
+Votre deuxième texte...
+
+---
+
+SEGMENT 3 — Conclusion
+Votre conclusion..."
+          ></textarea>
+
+          <div class="input-actions">
+            <button class="button primary" id="createButton">
+              Créer les segments
+            </button>
+
+            <button class="button icon" id="clearButton" title="Effacer">
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div class="segment-heading">
+          <span>Sections détectées</span>
+          <span id="segmentCount">0 segment</span>
+        </div>
+
+        <nav id="segmentList"></nav>
+      </aside>
+
+      <main class="prompter">
+
+        <div class="controls">
+          <div class="transport">
+            <button class="button icon" id="restartButton" title="Recommencer">
+              ↺
+            </button>
+
+            <button class="button primary" id="playButton">
+              ▶ Lecture
+            </button>
+          </div>
+
+          <div class="speed-control">
+            <span>Vitesse</span>
+
+            <input
+              id="speedRange"
+              type="range"
+              min="40"
+              max="260"
+              step="5"
+              value="115"
+            >
+
+            <span id="speedValue">115 mots/min</span>
+          </div>
+
+          <div class="transport">
+            <button class="button icon" id="smallerButton">A−</button>
+            <button class="button icon" id="largerButton">A+</button>
+            <button class="button" id="mirrorButton">Miroir</button>
+          </div>
+        </div>
+
+        <section class="reader-shell">
+          <div id="reader">
+            <article id="readerContent">
+              <div class="empty">
+                Collez votre texte et cliquez sur<br>
+                <strong>Créer les segments</strong>.
+              </div>
+            </article>
+          </div>
+
+          <div class="fade"></div>
+          <div class="guide"></div>
+        </section>
+
+        <footer class="bottom">
+          <div>
+            <div id="currentTitle">Aucun segment</div>
+            <div id="currentMeta">0 mot · durée estimée 0:00</div>
+          </div>
+
+          <div class="progress-zone">
+            <span class="time" id="elapsedTime">0:00</span>
+
+            <div class="progress-track">
+              <div id="progress"></div>
+            </div>
+
+            <span class="time" id="totalTime">0:00</span>
+          </div>
+
+          <div class="navigation">
+            <button class="button" id="previousButton">← Précédent</button>
+            <button class="button" id="nextButton">Suivant →</button>
+          </div>
+        </footer>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const elements = {
+      input: document.getElementById("scriptInput"),
+      create: document.getElementById("createButton"),
+      clear: document.getElementById("clearButton"),
+      example: document.getElementById("exampleButton"),
+      live: document.getElementById("liveButton"),
+      list: document.getElementById("segmentList"),
+      count: document.getElementById("segmentCount"),
+      reader: document.getElementById("reader"),
+      content: document.getElementById("readerContent"),
+      play: document.getElementById("playButton"),
+      restart: document.getElementById("restartButton"),
+      previous: document.getElementById("previousButton"),
+      next: document.getElementById("nextButton"),
+      speed: document.getElementById("speedRange"),
+      speedValue: document.getElementById("speedValue"),
+      smaller: document.getElementById("smallerButton"),
+      larger: document.getElementById("largerButton"),
+      mirror: document.getElementById("mirrorButton"),
+      currentTitle: document.getElementById("currentTitle"),
+      currentMeta: document.getElementById("currentMeta"),
+      progress: document.getElementById("progress"),
+      elapsed: document.getElementById("elapsedTime"),
+      total: document.getElementById("totalTime")
+    };
+
+    const exampleText = `# MEYDEN SCÈNE
+
+## OUVERTURE
+Bonsoir tout le monde et bienvenue à MEYDEN Scène.
+
+Aujourd’hui, nous mettons en lumière les artistes indépendants et les personnes qui construisent la scène culturelle québécoise.
+
+[REGARD CAMÉRA]
+
+THÈME : NOUVELLES DE LA SEMAINE
+Voici les nouvelles importantes et les prochaines étapes du mouvement.
+
+---
+
+SEGMENT 3 — ENTREVUE
+Notre invité travaille directement avec les artistes.
+
+[PAUSE — PRÉSENTER L’INVITÉ]
+
+Première question : qu’est-ce qui t’a donné envie de participer à ce projet?
+
+## CONCLUSION
+Merci aux artistes, aux partenaires et à toutes les personnes qui nous regardent.
+
+On se retrouve bientôt pour une nouvelle édition de MEYDEN Scène.`;
+
+    let segments = [];
+    let currentIndex = 0;
+    let playing = false;
+    let animation = null;
+    let previousFrame = 0;
+    let fontSize = 54;
+
+    function escapeHTML(text) {
+      return String(text).replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[character]);
+    }
+
+    function cleanTitle(line) {
+      return line
+        .replace(/^#{1,6}\s*/, "")
+        .replace(
+          /^(section|segment|partie|chapitre|bloc|thème|theme|sujet)\s*(n[o°.]?\s*)?(\d+|[ivx]+)?\s*[:\-–—]?\s*/i,
+          ""
+        )
+        .trim() || "Segment sans titre";
+    }
+
+    function detectTitle(line) {
+      const value = line.trim();
+
+      if (!value) return null;
+
+      const markdown = value.match(/^#{1,6}\s+(.+)$/);
+
+      if (markdown) {
+        return {
+          title: cleanTitle(markdown[1]),
+          level: value.match(/^#+/)[0].length
+        };
+      }
+
+      const explicit = value.match(
+        /^(section|segment|partie|chapitre|bloc|thème|theme|sujet)\b/i
+      );
+
+      if (explicit) {
+        return {
+          title: cleanTitle(value),
+          level: 2
+        };
+      }
+
+      const letters = value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, "");
+
+      const uppercaseTitle =
+        letters.length >= 4 &&
+        value.length <= 85 &&
+        letters === letters.toUpperCase() &&
+        !/[.!?]$/.test(value);
+
+      if (uppercaseTitle) {
+        return {
+          title: cleanTitle(value),
+          level: 2
+        };
+      }
+
+      return null;
+    }
+
+    function countWords(text) {
+      return (text.match(/[\p{L}\p{N}’'-]+/gu) || []).length;
+    }
+
+    function parseScript(text) {
+      const lines = text.replace(/\r/g, "").split("\n");
+      const detected = [];
+
+      let current = {
+        title: "Texte principal",
+        lines: []
+      };
+
+      let hasBody = false;
+
+      function saveCurrent() {
+        const body = current.lines.join("\n").trim();
+
+        if (!body) return;
+
+        detected.push({
+          title: current.title || `Segment ${detected.length + 1}`,
+          body,
+          words: countWords(body)
+        });
+      }
+
+      for (const originalLine of lines) {
+        const line = originalLine.trim();
+
+        if (/^(---+|===+|\*\*\*+)$/.test(line)) {
+          saveCurrent();
+
+          current = {
+            title: `Segment ${detected.length + 1}`,
+            lines: []
+          };
+
+          hasBody = false;
+          continue;
+        }
+
+        const heading = detectTitle(line);
+
+        if (heading) {
+          /*
+            Le premier titre avec un seul # représente le titre général
+            de l’émission. Il ne devient pas un segment s’il n’a pas de texte.
+          */
+          if (
+            heading.level === 1 &&
+            detected.length === 0 &&
+            !hasBody &&
+            current.lines.length === 0
+          ) {
+            continue;
+          }
+
+          if (hasBody) {
+            saveCurrent();
+          }
+
+          current = {
+            title: heading.title,
+            lines: []
+          };
+
+          hasBody = false;
+          continue;
+        }
+
+        current.lines.push(originalLine);
+
+        if (line) {
+          hasBody = true;
+        }
+      }
+
+      saveCurrent();
+
+      return detected;
+    }
+
+    function formatTime(seconds) {
+      const safeSeconds = Math.max(0, Math.round(seconds || 0));
+      const minutes = Math.floor(safeSeconds / 60);
+      const remainingSeconds = String(safeSeconds % 60).padStart(2, "0");
+
+      return `${minutes}:${remainingSeconds}`;
+    }
+
+    function estimatedDuration(segment) {
+      if (!segment) return 0;
+
+      const speed = Number(elements.speed.value);
+      return Math.max(1, segment.words / speed * 60);
+    }
+
+    function isInstruction(text) {
+      return (
+        /^\s*\[[^\]]+]\s*$/.test(text) ||
+        /^\s*\([^)]+\)\s*$/.test(text) ||
+        /^(PAUSE|REGARD CAMÉRA|RESPIRER|LANCER|ATTENDRE)/i.test(text)
+      );
+    }
+
+    function renderSegmentList() {
+      elements.count.textContent =
+        `${segments.length} segment${segments.length > 1 ? "s" : ""}`;
+
+      elements.list.innerHTML = segments.map((segment, index) => `
+        <button
+          class="segment ${index === currentIndex ? "active" : ""}"
+          data-index="${index}"
+        >
+          <span class="segment-number">${index + 1}</span>
+
+          <span class="segment-info">
+            <span class="segment-title">
+              ${escapeHTML(segment.title)}
+            </span>
+
+            <span class="segment-meta">
+              ${segment.words} mots · environ
+              ${formatTime(estimatedDuration(segment))}
+            </span>
+          </span>
+        </button>
+      `).join("");
+
+      document.querySelectorAll(".segment").forEach(button => {
+        button.addEventListener("click", () => {
+          selectSegment(Number(button.dataset.index));
+        });
+      });
+    }
+
+    function renderReader(resetPosition = true) {
+      const segment = segments[currentIndex];
+
+      if (!segment) {
+        elements.content.innerHTML = `
+          <div class="empty">
+            Collez votre texte et cliquez sur<br>
+            <strong>Créer les segments</strong>.
+          </div>
+        `;
+
+        elements.currentTitle.textContent = "Aucun segment";
+        elements.currentMeta.textContent = "0 mot · durée estimée 0:00";
+        elements.total.textContent = "0:00";
+        updateProgress();
+        return;
+      }
+
+      const paragraphs = segment.body
+        .split(/\n\s*\n/)
+        .map(paragraph => paragraph.trim())
+        .filter(Boolean);
+
+      elements.content.innerHTML = `
+        <div class="reader-label">
+          Segment ${currentIndex + 1} sur ${segments.length}
+        </div>
+
+        <h2 class="reader-title">
+          ${escapeHTML(segment.title)}
+        </h2>
+
+        ${paragraphs.map(paragraph => `
+          <p class="${isInstruction(paragraph) ? "cue" : "reader-text"}">
+            ${escapeHTML(paragraph).replace(/\n/g, "<br>")}
+          </p>
+        `).join("")}
+      `;
+
+      elements.currentTitle.textContent =
+        `${currentIndex + 1}. ${segment.title}`;
+
+      elements.currentMeta.textContent =
+        `${segment.words} mots · durée estimée ` +
+        formatTime(estimatedDuration(segment));
+
+      elements.total.textContent =
+        formatTime(estimatedDuration(segment));
+
+      if (resetPosition) {
+        elements.reader.scrollTop = 0;
+      }
+
+      elements.previous.disabled = currentIndex === 0;
+      elements.next.disabled = currentIndex === segments.length - 1;
+
+      updateProgress();
+    }
+
+    function createSegments() {
+      stop();
+
+      segments = parseScript(elements.input.value.trim());
+      currentIndex = 0;
+
+      renderSegmentList();
+      renderReader();
+
+      localStorage.setItem(
+        "meydenTeleprompterText",
+        elements.input.value
+      );
+    }
+
+    function selectSegment(index, startAutomatically = false) {
+      if (index < 0 || index >= segments.length) return;
+
+      stop();
+      currentIndex = index;
+
+      renderSegmentList();
+      renderReader();
+
+      if (startAutomatically) {
+        play();
+      }
+    }
+
+    function pixelsPerSecond() {
+      const speed = Number(elements.speed.value);
+      const width = Math.max(300, elements.content.clientWidth);
+      const averageWordsPerLine = Math.max(
+        4,
+        width / (fontSize * 2.7)
+      );
+
+      const lineHeight = fontSize * 1.48;
+
+      return (speed / 60 / averageWordsPerLine) * lineHeight;
+    }
+
+    function scrollFrame(timestamp) {
+      if (!playing) return;
+
+      if (!previousFrame) {
+        previousFrame = timestamp;
+      }
+
+      const elapsed = Math.min(50, timestamp - previousFrame) / 1000;
+      previousFrame = timestamp;
+
+      elements.reader.scrollTop += pixelsPerSecond() * elapsed;
+      updateProgress();
+
+      const maximum =
+        elements.reader.scrollHeight - elements.reader.clientHeight;
+
+      if (
+        maximum > 0 &&
+        elements.reader.scrollTop >= maximum - 2
+      ) {
+        stop();
+        return;
+      }
+
+      animation = requestAnimationFrame(scrollFrame);
+    }
+
+    function play() {
+      if (!segments.length || playing) return;
+
+      const maximum =
+        elements.reader.scrollHeight - elements.reader.clientHeight;
+
+      if (elements.reader.scrollTop >= maximum - 2) {
+        elements.reader.scrollTop = 0;
+      }
+
+      playing = true;
+      previousFrame = 0;
+      elements.play.textContent = "Ⅱ Pause";
+
+      animation = requestAnimationFrame(scrollFrame);
+    }
+
+    function stop() {
+      playing = false;
+      previousFrame = 0;
+
+      if (animation) {
+        cancelAnimationFrame(animation);
+      }
+
+      animation = null;
+      elements.play.textContent = "▶ Lecture";
+    }
+
+    function togglePlay() {
+      playing ? stop() : play();
+    }
+
+    function restart() {
+      stop();
+      elements.reader.scrollTop = 0;
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const maximum = Math.max(
+        0,
+        elements.reader.scrollHeight - elements.reader.clientHeight
+      );
+
+      const ratio = maximum
+        ? Math.min(1, elements.reader.scrollTop / maximum)
+        : 0;
+
+      elements.progress.style.width = `${ratio * 100}%`;
+
+      elements.elapsed.textContent = formatTime(
+        estimatedDuration(segments[currentIndex]) * ratio
+      );
+    }
+
+    function changeFontSize(amount) {
+      fontSize = Math.max(28, Math.min(92, fontSize + amount));
+
+      document.documentElement.style.setProperty(
+        "--font-size",
+        `${fontSize}px`
+      );
+
+      localStorage.setItem(
+        "meydenTeleprompterFontSize",
+        fontSize
+      );
+
+      updateProgress();
+    }
+
+    function toggleLiveMode() {
+      document.body.classList.toggle("live-mode");
+
+      const active =
+        document.body.classList.contains("live-mode");
+
+      elements.live.textContent =
+        active ? "Quitter l’écran live" : "Écran live";
+
+      if (active && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (!active && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    elements.create.addEventListener("click", createSegments);
+
+    elements.clear.addEventListener("click", () => {
+      if (
+        !elements.input.value ||
+        confirm("Effacer tout le texte et les segments?")
+      ) {
+        stop();
+        elements.input.value = "";
+        segments = [];
+        currentIndex = 0;
+
+        localStorage.removeItem("meydenTeleprompterText");
+
+        renderSegmentList();
+        renderReader();
+      }
+    });
+
+    elements.example.addEventListener("click", () => {
+      elements.input.value = exampleText;
+      createSegments();
+    });
+
+    elements.play.addEventListener("click", togglePlay);
+    elements.restart.addEventListener("click", restart);
+
+    elements.previous.addEventListener("click", () => {
+      selectSegment(currentIndex - 1);
+    });
+
+    elements.next.addEventListener("click", () => {
+      selectSegment(currentIndex + 1);
+    });
+
+    elements.reader.addEventListener("scroll", updateProgress);
+
+    elements.speed.addEventListener("input", () => {
+      elements.speedValue.textContent =
+        `${elements.speed.value} mots/min`;
+
+      elements.total.textContent =
+        formatTime(estimatedDuration(segments[currentIndex]));
+
+      renderSegmentList();
+
+      localStorage.setItem(
+        "meydenTeleprompterSpeed",
+        elements.speed.value
+      );
+    });
+
+    elements.smaller.addEventListener("click", () => {
+      changeFontSize(-4);
+    });
+
+    elements.larger.addEventListener("click", () => {
+      changeFontSize(4);
+    });
+
+    elements.mirror.addEventListener("click", () => {
+      elements.content.classList.toggle("mirror");
+    });
+
+    elements.live.addEventListener("click", toggleLiveMode);
+
+    elements.input.addEventListener("input", () => {
+      localStorage.setItem(
+        "meydenTeleprompterText",
+        elements.input.value
+      );
+    });
+
+    document.addEventListener("keydown", event => {
+      const writing =
+        event.target.tagName === "TEXTAREA" ||
+        event.target.tagName === "INPUT";
+
+      if (writing) return;
+
+      if (event.code === "Space") {
+        event.preventDefault();
+        togglePlay();
+      }
+
+      if (event.key === "ArrowRight") {
+        selectSegment(currentIndex + 1);
+      }
+
+      if (event.key === "ArrowLeft") {
+        selectSegment(currentIndex - 1);
+      }
+
+      if (event.key === "ArrowUp") {
+        elements.speed.value = Math.min(
+          260,
+          Number(elements.speed.value) + 5
+        );
+
+        elements.speed.dispatchEvent(new Event("input"));
+      }
+
+      if (event.key === "ArrowDown") {
+        elements.speed.value = Math.max(
+          40,
+          Number(elements.speed.value) - 5
+        );
+
+        elements.speed.dispatchEvent(new Event("input"));
+      }
+
+      if (event.key.toLowerCase() === "f") {
+        toggleLiveMode();
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      if (
+        !document.fullscreenElement &&
+        document.body.classList.contains("live-mode")
+      ) {
+        document.body.classList.remove("live-mode");
+        elements.live.textContent = "Écran live";
+      }
+    });
+
+    const savedText =
+      localStorage.getItem("meydenTeleprompterText");
+
+    const savedSpeed =
+      localStorage.getItem("meydenTeleprompterSpeed");
+
+    const savedFontSize =
+      localStorage.getItem("meydenTeleprompterFontSize");
+
+    if (savedText) {
+      elements.input.value = savedText;
+    }
+
+    if (savedSpeed) {
+      elements.speed.value = savedSpeed;
+      elements.speedValue.textContent =
+        `${savedSpeed} mots/min`;
+    }
+
+    if (savedFontSize) {
+      fontSize = Number(savedFontSize);
+
+      document.documentElement.style.setProperty(
+        "--font-size",
+        `${fontSize}px`
+      );
+    }
+
+    if (elements.input.value.trim()) {
+      createSegments();
+    }
+  </script>
+</body>
+</html>
